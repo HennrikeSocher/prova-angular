@@ -97,33 +97,71 @@ public class TarefaController : ControllerBase
         }
     }
 
-     [HttpPut]
-    [Route("alterar/{id}")]
-    public IActionResult Alterar([FromRoute] int id,
-        [FromBody] Tarefa Tarefa)
+   // POST: api/tarefa/alterar/{tarefaId}
+    [HttpPatch]
+    [Route("alterar/{tarefaId}")]
+    public IActionResult Alterar([FromRoute] int tarefaId)
     {
         try
         {
-            //Expressões lambda
-            Tarefa? TarefaCadastrado =
-                _context.Tarefas.FirstOrDefault(x => x.TarefaId == id);
-            if (TarefaCadastrado != null)
-            {
-                Categoria? categoria =
-                    _context.Categorias.Find(Tarefa.CategoriaId);
-                if (categoria == null)
-                {
-                    return NotFound();
-                }
-                TarefaCadastrado.Categoria = categoria;
-                TarefaCadastrado.Titulo = Tarefa.Titulo;
-                TarefaCadastrado.Descricao = Tarefa.Descricao;
-                TarefaCadastrado.CriadoEm = Tarefa.CriadoEm;
-                _context.Tarefas.Update(TarefaCadastrado);
-                _context.SaveChanges();
-                return Ok();
+            Tarefa? tarefa = _context.Tarefas.FirstOrDefault(t => t.TarefaId == tarefaId);
+
+             if (tarefa == null ) {
+                return NotFound();
             }
-            return NotFound();
+
+            if (tarefa.Status == null) {
+                tarefa.Status = "Em andamento";
+            }
+
+            if (tarefa.Status == "Em andamento") {
+                tarefa.Status = "Concluída";
+            } else {
+                tarefa.Status = "Em andamento";
+            }
+
+             _context.SaveChanges();
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    // GET: api/tarefa/naoconcluidas
+    [HttpGet]
+    [Route("listar/naoconcluidas")]
+    public IActionResult ListarNaoConcluidas()
+    {
+        try
+        {
+            List<Tarefa> tarefasNaoConcluidas = _context.Tarefas
+                .Include(x => x.Categoria)
+                .Where(t => t.Status.Equals("Em andamento"))
+                .ToList();
+
+            return Ok(tarefasNaoConcluidas);
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    // GET: api/tarefa/concluidas
+    [HttpGet]
+    [Route("listar/concluidas")]
+    public IActionResult ListarConcluidas()
+    {
+        try
+        {
+            List<Tarefa> tarefasConcluidas = _context.Tarefas
+                .Include(x => x.Categoria)
+                .Where(t => t.Status.Equals("Concluída"))
+                .ToList();
+
+            return Ok(tarefasConcluidas);
         }
         catch (Exception e)
         {
